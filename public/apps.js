@@ -82,7 +82,7 @@ function renderTasks(list) {
             const loginMsg = document.getElementById('loginMsg');
             const newTask = document.getElementById('newTask');
 
-            btnLogin.addEventListener('click', async () =>{
+            btnLogin.addEventListener('click', async () => {
                 loginMsg.style.display = 'none';
                 loginMsg.textContent = '';
 
@@ -104,9 +104,33 @@ function renderTasks(list) {
                 await fetchTasks();
             });
 
-            btnLogout.addEventListener('click', async() =>{
+            btnLogout.addEventListener('click', async() => {
                     await fetch('/logout', {method: 'POST'});
                     show('login');
             });
+
+            btnAdd.addEventListener('click', async() => {
+                    const title = (newTask.value || '').trim();
+
+                    if (!title) return;
+
+                    const res = await fetch('/tasks', {
+                        method: 'POST',
+                        headers: {'Content-type': 'application/json'},
+                        body: JSON.stringify({title, completed: false})
+                    });
+
+                    if (res.status === 401) {
+                        show('login');
+                        return;
+                    }
+
+                    newTask.value = '';
+                    await fetchTasks();
+                    
+            });
+            
+            await checkAuthAndInit();
+            
         });
     })}
