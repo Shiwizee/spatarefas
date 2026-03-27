@@ -26,7 +26,7 @@ function ensureDataFiles() {
       tasksFile,
       JSON.stringify(
         [
-          { id: 1, title: 'Exemplo: estudar Express', completed: false },
+          { id: 1, title: 'Exemplo: Estudar Express', completed: false },
           { id: 2, title: 'Configurar SPA básica', completed: true }
         ],
         null,
@@ -120,7 +120,7 @@ app.post('/tasks', requireAuth, (req, res) => {
   res.json(t);
 });
 
-// Atualizar tarefa
+// Atualizar tarefas
 app.put('/tasks/:id', requireAuth, (req, res) => {
   const id = parseInt(req.params.id, 10);
   const {title, completed} = req.body || {};
@@ -132,8 +132,9 @@ app.put('/tasks/:id', requireAuth, (req, res) => {
   if (!t)
     return res.status(404).json({message: 'Tarefa não encontrada!'});
 
-  if (title !== undefined)
-    t.title = title;
+  if (title !== undefined) t.title = title;
+  if (completed !== undefined) t.completed = !!completed;
+
   writeJson(tasksFile, tasks);
   res.json(t);
 });
@@ -152,4 +153,15 @@ app.delete('/tasks/:id', requireAuth, (req, res) => {
 
   writeJson(tasksFile, tasks);
   res.json(removed);
+
+});
+
+// Rota para comando desconhecido
+app.get('*', (req, res) => { 
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+//Ponto de entrada
+app.listen(port, () => {
+  console.log(`Servidor rodando em http://localhost:${port}`);
 });

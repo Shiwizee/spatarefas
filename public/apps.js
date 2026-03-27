@@ -7,6 +7,7 @@ function show(panel) {
 function renderTasks(list) {
     const ul = document.getElementById('taskList');
     ul.innerHTML = '';
+    list.sort((a, b) => a.title.localeCompare(b.title));
 
     list.forEach (t => {
         const li = document.createElement('li');
@@ -16,9 +17,9 @@ function renderTasks(list) {
         title.textContent = t.title;
 
         const cb = document.createElement('input');
-        cb.className = 'checkBox';
+        cb.className = 'checkbox';
         cb.type = 'checkbox';
-        cb.checked = !t.completed;
+        cb.checked = !!t.completed;
 
         cb.addEventListener('change', async() => {
             await fetch(`/tasks/${t.id}`, {
@@ -29,108 +30,135 @@ function renderTasks(list) {
             await fetchTasks();
         });
 
+        //Botão excluir
         const del = document.createElement('button');
         del.textContent = 'Excluir';
         del.style.width = 'auto';
         del.style.marginTop = '0';
         del.style.padding = '8px 10px'
         del.addEventListener('click', async () => {
+            const confirmacao = confirm('Tem certeza que deseja excluir esta tarefa?');
             await fetch(`/tasks/${t.id}`,
                 {method: 'DELETE'} );
             await fetchTasks();
+        });
+
+        //Botão editar
+        const edit = document.createElement('button');
+        edit.textContent = 'Editar';
+        edit.style.width = 'auto';
+        edit.style.marginTop = '0';
+        edit.style.padding = '8px 10px'
+        edit.addEventListener('click', async () => {
+            const newTitle = prompt('Novo título', t.title);
+            if (!newTitle) return;
+            await fetch(`/tasks/${t.id}`,
+                {method: 'PUT', headers: {'Content-type': 'application/json'}, body: JSON.stringify({title: newTitle})});
+            await fetchTasks();
+        });
+
+        const btnFiltrarTodos = document.querySelector('.btnFiltrar[data-category="todos"]');
+        btnFiltrarTodos.addEventListener('click', () => {
+            renderTasks(list);
+        });
+        const btnFiltrarPendentes = document.querySelector('.btnFiltrar[data-category="pendentes"]');
+        btnFiltrarPendentes.addEventListener('click', () => {
+            renderTasks(list.filter(t => !t.completed));
+
+        });
+        const btnFiltrarConcluidas = document.querySelector('.btnFiltrar[data-category="concluidas"]');
+        btnFiltrarConcluidas.addEventListener('click', () => {
+
+            renderTasks(list.filter(t => t.completed));
         });
 
         const actions = document.createElement('span');
         actions.className = 'task-cta';
         actions.appendChild(cb);
         actions.appendChild(del);
+        actions.appendChild(edit);
         li.appendChild(title);
         li.appendChild(actions);
         ul.appendChild(li);
+    });
+}
 
-        async function fetchTasks() {
-            const res = await fetch('/tasks');
+function filterTasks(category) {
+    
+}
 
-            if (res.status === 401) {
-                show('login');
-                return;
-            }
+async function fetchTasks() {
+    const res = await fetch('/tasks')
+    if (res.status === 401) {
+        show('login');
+        return;
+    }
 
-            const data = await res.json();
-            renderTasks(data);
+    const data = await res.json();
+    renderTasks(data);
             
+}
+
+async function checkAuthAndInit() {
+    const me = await fetch('/me')
+    if (me.ok) {
+        show('app');
+        await fetchTasks();
+    } else {
+        show('login');
+    }
+}
+        
+document.addEventListener('DOMContentLoaded', async () => {
+    const btnLogin = document.getElementById('btnLogin');
+    const btnAdd = document.getElementById('btnAdd');
+    const btnLogout = document.getElementById('btnLogout')
+    const username = document.getElementById('username');
+    const password = document.getElementById('password');
+    const loginMsg = document.getElementById('loginMsg');
+    const newTask = document.getElementById('newTask')
+
+    btnLogin.addEventListener('click', async () => {
+        loginMsg.style.display = 'none';
+        loginMsg.textContent = ''
+        const res = await fetch('/login', {
+            method: 'POST',
+            headers: {'Content-type': 'application/json'},
+            body: JSON.stringify({
+                username: (username.value || '').trim(),
+                password: (password.value || '').trim()
+            })
+        })
+        if (!res.ok) {
+            loginMsg.textContent = 'Credenciais Inválidas';
+            loginMsg.style.display = 'block';
+            return;
         }
-
-        async function checkAuthAndInit() {
-            const me = await fetch('/me');
-
-            if (me.ok) {
-                show('app');
-                await fetchTasks();
-            } else {
-                show('login');
-            }
+        show('app');
+        await fetchTasks();
+    })
+    btnLogout.addEventListener('click', async() => {
+        await fetch('/logout', {method: 'POST'});
+        show('login');
+    })
+    btnAdd.addEventListener('click', async() => {
+        const title = (newTask.value || '').trim()
+        if (!title) return
+        const res = await fetch('/tasks', {
+            method: 'POST',
+            headers: {'Content-type': 'application/json'},
+            body: JSON.stringify({title, completed: false})
+        })
+        if (res.status === 401) {
+            show('login');
+            return;
         }
         
-        document.addEventListener('DOMContentLoaded', async () => {
-            const btnLogin = document.getElementById('btnLogin');
-            const btnAdd = document.getElementById('btnAdd');
-            const btnLogout = document.getElementById('btnLogout');
-
-            const username = document.getElementById('username');
-            const password = document.getElementById('password');
-            const loginMsg = document.getElementById('loginMsg');
-            const newTask = document.getElementById('newTask');
-
-            btnLogin.addEventListener('click', async () => {
-                loginMsg.style.display = 'none';
-                loginMsg.textContent = '';
-
-                const res = await fetch('/login', {
-                    method: 'POST',
-                    headers: {'Content-type': 'application/json'},
-                    body: JSON.stringify({
-                        username: (username.value || '').trim(),
-                        password: (password.value || '').trim()
-                    })
-                });
-
-                if (!res.ok) {
-                    loginMsg.textContent = 'Credenciais Inválidas';
-                    loginMsg.style.display = 'block';
-                    return;
-                }
-                show(app);
-                await fetchTasks();
-            });
-
-            btnLogout.addEventListener('click', async() => {
-                    await fetch('/logout', {method: 'POST'});
-                    show('login');
-            });
-
-            btnAdd.addEventListener('click', async() => {
-                    const title = (newTask.value || '').trim();
-
-                    if (!title) return;
-
-                    const res = await fetch('/tasks', {
-                        method: 'POST',
-                        headers: {'Content-type': 'application/json'},
-                        body: JSON.stringify({title, completed: false})
-                    });
-
-                    if (res.status === 401) {
-                        show('login');
-                        return;
-                    }
-
-                    newTask.value = '';
-                    await fetchTasks();
-                    
-            });
+        newTask.value = '';
+        await fetchTasks();
             
-            await checkAuthAndInit();
-            
-        });
-    })}
+    });
+    
+    await checkAuthAndInit();
+    
+});
