@@ -38,6 +38,9 @@ function renderTasks(list) {
         del.style.padding = '8px 10px'
         del.addEventListener('click', async () => {
             const confirmacao = confirm('Tem certeza que deseja excluir esta tarefa?');
+
+            if (!confirmacao) return;
+            
             await fetch(`/tasks/${t.id}`,
                 {method: 'DELETE'} );
             await fetchTasks();
@@ -52,24 +55,11 @@ function renderTasks(list) {
         edit.addEventListener('click', async () => {
             const newTitle = prompt('Novo título', t.title);
             if (!newTitle) return;
+
             await fetch(`/tasks/${t.id}`,
                 {method: 'PUT', headers: {'Content-type': 'application/json'}, body: JSON.stringify({title: newTitle})});
+
             await fetchTasks();
-        });
-
-        const btnFiltrarTodos = document.querySelector('.btnFiltrar[data-category="todos"]');
-        btnFiltrarTodos.addEventListener('click', () => {
-            renderTasks(list);
-        });
-        const btnFiltrarPendentes = document.querySelector('.btnFiltrar[data-category="pendentes"]');
-        btnFiltrarPendentes.addEventListener('click', () => {
-            renderTasks(list.filter(t => !t.completed));
-
-        });
-        const btnFiltrarConcluidas = document.querySelector('.btnFiltrar[data-category="concluidas"]');
-        btnFiltrarConcluidas.addEventListener('click', () => {
-
-            renderTasks(list.filter(t => t.completed));
         });
 
         const actions = document.createElement('span');
@@ -83,21 +73,33 @@ function renderTasks(list) {
     });
 }
 
-function filterTasks(category) {
-    
-}
+let allTasks = [];
 
 async function fetchTasks() {
-    const res = await fetch('/tasks')
+    const res = await fetch('/tasks');
     if (res.status === 401) {
         show('login');
         return;
     }
-
-    const data = await res.json();
-    renderTasks(data);
-            
+    allTasks = await res.json();
+    renderTasks(allTasks);
 }
+
+const btnTodos = document.querySelector('.btnFiltrar[data-category="todos"]');
+const btnPendentes = document.querySelector('.btnFiltrar[data-category="pendentes"]');
+const btnConcluidas = document.querySelector('.btnFiltrar[data-category="concluidas"]');
+
+btnTodos.addEventListener('click', () => {
+    renderTasks(allTasks);
+});
+
+btnPendentes.addEventListener('click', () => {
+    renderTasks(allTasks.filter(t => !t.completed));
+});
+
+btnConcluidas.addEventListener('click', () => {
+    renderTasks(allTasks.filter(t => t.completed));
+});
 
 async function checkAuthAndInit() {
     const me = await fetch('/me')
