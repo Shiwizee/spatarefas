@@ -85,21 +85,21 @@ async function fetchTasks() {
     renderTasks(allTasks);
 }
 
-const btnTodos = document.querySelector('.btnFiltrar[data-category="todos"]');
-const btnPendentes = document.querySelector('.btnFiltrar[data-category="pendentes"]');
-const btnConcluidas = document.querySelector('.btnFiltrar[data-category="concluidas"]');
+    const btnTodos = document.querySelector('.btnFiltrar[data-category="todos"]');
+    const btnPendentes = document.querySelector('.btnFiltrar[data-category="pendentes"]');
+    const btnConcluidas = document.querySelector('.btnFiltrar[data-category="concluidas"]');
 
-btnTodos.addEventListener('click', () => {
-    renderTasks(allTasks);
-});
+    btnTodos.addEventListener('click', () => {
+        renderTasks(allTasks);
+    });
 
-btnPendentes.addEventListener('click', () => {
-    renderTasks(allTasks.filter(t => !t.completed));
-});
+    btnPendentes.addEventListener('click', () => {
+        renderTasks(allTasks.filter(t => !t.completed));
+    });
 
-btnConcluidas.addEventListener('click', () => {
-    renderTasks(allTasks.filter(t => t.completed));
-});
+    btnConcluidas.addEventListener('click', () => {
+        renderTasks(allTasks.filter(t => t.completed));
+    });
 
 async function checkAuthAndInit() {
     const me = await fetch('/me')
